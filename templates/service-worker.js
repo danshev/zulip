@@ -1,13 +1,12 @@
 'use strict';
 
-// This file is effectively "rendered" when the browser calls:
+// This file is rendered as a template when the browser calls:
 //
 //      navigator.serviceWorker.register("/service-worker.js") ... see notifications.js
 //
-//  and is cached locally and runs in the background to handle messages received from GCM.
-//
-// As a result, the code within this file cannot reference modules from other static files).
-
+//  This file is cached locally and runs in the background to handle messages received from GCM.
+{% include "js/util.js" %}
+{% include "js/filter.js" %}
 
 // The user's email and API-key are passed in via URL parameters in the format:
 //  your-domain.com/service-worker.js?email:api_key --- this line extracts them
