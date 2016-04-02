@@ -1,0 +1,14 @@
+{
+	"manifest_version": 2,
+	"name": "Zulip",
+	"version": "1.0",
+
+	// Recommended
+	"default_locale": "en",
+	"description": "Zulip",
+
+	"display": "standalone",  
+    "gcm_sender_id": "0000000000000",  	// <--- your GCM id here
+    "gcm_user_visible_only": true,
+    "permissions": [ "gcm" ]
+}

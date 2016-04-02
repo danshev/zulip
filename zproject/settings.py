@@ -75,6 +75,9 @@ TEST_SUITE = False
 # The new user tutorial is enabled by default, but disabled for client tests.
 TUTORIAL_ENABLED = True
 
+UBIQUITOUS_WEB_PUSH = True
+WEB_PUSH_FOR_MOBILE_ONLY = True
+
 # Import variables like secrets from the local_settings file
 # Import local_settings after determining the deployment/machine type
 if PRODUCTION:

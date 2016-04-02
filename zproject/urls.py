@@ -19,6 +19,9 @@ urlpatterns = patterns('',
     # want to require a new desktop app build for everyone in that case
     url(r'^desktop_home/$', 'zerver.views.desktop_home'),
 
+    url(r'^service-worker(.*.js)(?:/(?P<title>[a-zA-Z]+)/)?', 
+        TemplateView.as_view(template_name='service-worker.js', content_type='application/x-javascript')),
+
     url(r'^accounts/login/sso/$', 'zerver.views.remote_user_sso', name='login-sso'),
     url(r'^accounts/login/jwt/$', 'zerver.views.remote_user_jwt', name='login-jwt'),
     url(r'^accounts/login/google/$', 'zerver.views.start_google_oauth2'),
@@ -186,6 +189,10 @@ v1_api_and_json_patterns = patterns('zerver.views',
     url(r'^users/me/android_gcm_reg_id$', 'rest_dispatch',
         {'POST': 'add_android_reg_id',
          'DELETE': 'remove_android_reg_id'}),
+
+    url(r'^users/me/pickup_web_notification$', 'rest_dispatch',
+            {'POST': 'pickup_web_notification'}),
+
     url(r'^register$', 'rest_dispatch',
             {'POST': 'api_events_register'}),
 

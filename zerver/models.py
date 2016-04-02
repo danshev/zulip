@@ -311,6 +311,8 @@ class UserProfile(AbstractBaseUser, PermissionsMixin):
 
     ### Notifications settings. ###
 
+    web_notification_payload = models.TextField(default=ujson.dumps([]))
+
     # Stream notifications.
     enable_stream_desktop_notifications = models.BooleanField(default=False)
     enable_stream_sounds = models.BooleanField(default=False)

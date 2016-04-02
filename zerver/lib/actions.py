@@ -2755,16 +2755,43 @@ def handle_push_notification(user_profile_id, missed_message):
                 }
 
                 if message.recipient.type == Recipient.STREAM:
+                    stream_name = get_display_recipient(message.recipient)
                     android_data['recipient_type'] = "stream"
-                    android_data['stream'] = get_display_recipient(message.recipient)
+                    android_data['stream'] = stream_name
                     android_data['topic'] = message.subject
+                    store_web_notification(user_profile, sender_str, content, "stream", stream=stream_name, subject=message.subject)
+
                 elif message.recipient.type in (Recipient.HUDDLE, Recipient.PERSONAL):
                     android_data['recipient_type'] = "private"
+                    store_web_notification(user_profile, sender_str, content, "private", sender_email=message.sender.email)
 
                 send_android_push_notification(user_profile, android_data)
 
     except UserMessage.DoesNotExist:
         logging.error("Could not find UserMessage with message_id %s" %(missed_message['message_id'],))
+
+def store_web_notification(user_profile, sender_name, msg_body, recipient_type, stream=None, subject=None, sender_email=None):
+    raw_operators = []
+    if recipient_type == "stream":
+        raw_operators.append(dict(negated=False, operator="stream", operand=stream))
+        if subject is not None and subject != "":
+            raw_operators.append(dict(negated=False, operator="subject", operand=subject))
+    elif recipient_type == "private":
+        raw_operators.append(dict(negated=False, operator="pm-with", operand=sender_email))
+        msg_body = "New private message"
+    else:
+        logging.error("recipient_type was neither 'stream' nor 'private'".format())
+
+    if len(raw_operators) > 0:
+        user_profile.web_notification_payload = ujson.dumps({
+                            "title": sender_name,
+                            "body": msg_body,
+                            "tag": str(uuid.uuid4()),
+                            "raw_operators": raw_operators,
+                            "api_key": user_profile.api_key     # used to validate window message
+                        })
+
+        user_profile.save(update_fields=['web_notification_payload'])
 
 def is_inactive(email):
     try:

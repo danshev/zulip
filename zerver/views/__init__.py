@@ -804,6 +804,10 @@ def home(request):
         prompt_for_invites    = prompt_for_invites,
         notifications_stream  = notifications_stream,
 
+        api_key               = user_profile.api_key,
+        ubiquitous_web_push   = settings.UBIQUITOUS_WEB_PUSH,
+        web_push_for_mobile_only = settings.WEB_PUSH_FOR_MOBILE_ONLY,
+
         # Stream message notification settings:
         stream_desktop_notifications_enabled =
             user_profile.enable_stream_desktop_notifications,
@@ -1245,6 +1249,13 @@ def remove_apns_device_token(request, user_profile, token=REQ):
 def remove_android_reg_id(request, user_profile, token=REQ):
     return remove_push_device_token(request, user_profile, token, PushDeviceToken.GCM)
 
+@require_post
+@has_request_variables
+def pickup_web_notification(request, user_profile):
+    notification_data = ujson.loads(user_profile.web_notification_payload)
+    user.web_notification_payload = None
+    user.save(update_fields=['web_notification_payload'])
+    return json_success(notification_data)
 
 def generate_204(request):
     return HttpResponse(content=None, status=204)

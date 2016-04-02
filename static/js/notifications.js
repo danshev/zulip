@@ -1,3 +1,6 @@
+// To change your notification settings in chrome:
+//  visit -- chrome://settings/contentExceptions#notifications
+
 var notifications = (function () {
 
 var exports = {};
@@ -30,7 +33,7 @@ if (window.webkitNotifications) {
                 return 2;
             }
         },
-        requestPermission: window.Notification.requestPermission,
+        requestPermission: requestDevicePermission,
         createNotification: function createNotification(icon, title, content) {
             var notification_object = new window.Notification(title, {icon: icon, body: content});
             notification_object.show = function () {};
@@ -38,6 +41,66 @@ if (window.webkitNotifications) {
             return notification_object;
         }
     };
+}
+
+function requestDevicePermission (callback) {
+
+    var mobile_web_push = util.is_mobile_device() && page_params.web_push_for_mobile_only;
+    if (page_params.ubiquitous_web_push || mobile_web_push) {
+        if ("serviceWorker" in navigator) {  
+            navigator.serviceWorker.addEventListener("message", msg_listener, false);
+
+            var service_worker_url = "/service-worker.js?"+ page_params.email +":"+ page_params.api_key;
+            navigator.serviceWorker.register(service_worker_url).then(
+                function () {
+                    if (!("showNotification" in ServiceWorkerRegistration.prototype)) {  
+                        console.warn("Service workers are supported by this browser but Notifications are not.");
+                        callback();  
+                    }
+
+                    if (Notification.permission === "denied") {
+                        console.warn("Notifications are supported by this browser, but the user did not permit them.");  
+                        callback(); 
+                    }
+
+                    if (!("PushManager" in window)) {  
+                        console.warn("Service workers are supported by this browser but Push messaging is not.");  
+                        callback(); 
+                    }
+
+                    navigator.serviceWorker.ready.then(
+                        function(serviceWorkerRegistration) {  
+                            serviceWorkerRegistration.pushManager.getSubscription()  
+                                .then(function(subscription) {  
+                                    if (!subscription) {
+                                        push_notification_subscribe();
+                                        callback();
+                                    }
+                                    notifications.add_android_token(subscription.endpoint);
+                                })  
+                                .catch(
+                                    function(err) {  
+                                        console.warn("Error during push_notification_subscribe()", err);
+                                        callback();
+                                    }
+                                );  
+                        }
+                    ).catch(
+                        function(err) {  
+                            console.warn("Error during serviceWorker.ready", err);
+                            callback();
+                        }
+                    );
+                }
+            );  
+        } else {  
+            console.warn("Service workers are not supported by this browser, falling back to normal notifications.");
+            window.Notification.requestPermission(callback);
+            callback();
+        }
+    } else {
+        window.Notification.requestPermission(callback);
+    }
 }
 
 
@@ -67,8 +130,7 @@ exports.initialize = function () {
         });
         notice_memory = {};
 
-        // Update many places on the DOM to reflect unread
-        // counts.
+        // Update many places on the DOM to reflect unread counts.
         unread.process_visible();
 
     }).blur(function () {
@@ -103,6 +165,7 @@ exports.initialize = function () {
             if (!page_params.desktop_notifications_enabled || asked_permission_already) {
                 return;
             }
+
             if (notifications_api.checkPermission() !== 0) { // 0 is PERMISSION_ALLOWED
                 if(tutorial.is_running()) {
                     tutorial.defer(function () {
@@ -613,6 +676,72 @@ exports.handle_global_notification_updates = function (notification_name, settin
         page_params.enable_digest_emails = setting;
     }
 };
+
+function push_notification_subscribe() {
+    console.log("Chrome push notifications are not currently enabled.");
+    navigator.serviceWorker.ready.then(
+        function(serviceWorkerRegistration) {
+            serviceWorkerRegistration.pushManager.subscribe({ "userVisibleOnly": true }).then(
+                function(subscription) {
+                    notifications.add_android_token(subscription.endpoint);
+                }
+            ).catch(
+                function(e) {
+                    if (Notification.permission === "denied") {
+                        console.warn("Notifications are supported by this browser, but the user did not permit them.");  
+                    }
+                    else {
+                        console.warn("Notifications are supported by this browser, but subscription failed:", e);
+                    }
+                }
+            );
+        }
+    );
+}
+
+exports.add_android_token = function(endpoint) {
+    var token = endpoint.split("/").slice(-1)[0];
+    channel.post({
+        url: '/json/users/me/android_gcm_reg_id',
+        data: { token: token }
+    }).then(
+        function (data) {
+            console.log('successfully registered android token');
+        }, function (xhr) {
+            console.warn('failed to register android token');
+        }
+    );
+}
+
+// This function will receives notification when a user clicks a web push
+//  notification.
+function msg_listener(event) {
+    //
+    // << !--- --- SECURITY CONCERN --- ---! >>
+    //
+    //  Messages sent by Service Workers don't yet set their origin, 
+    //   so we can't use validate event.origin === window.location.origin
+    //
+    // So, our implementation passes the Zulip User's api_key in the event
+    //  data.  We validate it matches the value passed page_params.
+
+    if ("origin" in event) {
+        if (event.origin !== window.location.origin) {
+            return;
+        }
+    } else {
+        if (event.data.api_key !== page_params.api_key) {
+            alert("Received message was either a) not intended for you or b) fake.")
+            return;
+        }
+    }
+
+    // Response specifically for web push notifications:
+    if (event.data.message === "narrow") {
+        narrow.activate(event.data.raw_operators, 
+            {select_first_unread: true, change_hash: false, trigger: "hash change"});
+    }
+}
 
 return exports;
 
