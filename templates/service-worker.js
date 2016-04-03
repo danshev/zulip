@@ -28,20 +28,20 @@ self.addEventListener("push", function(event) {
             "headers": {
                 "Content-Type": "application/json",
                 "Authorization": "BASIC "+ b64_encoded_auth_data    // <--- Zulip's auth format
-            },
-            "credentials": "include"
+            }
         }).then(function(response) {  
             if (response.status !== 200) {  
                 console.error("Looks like there was a problem; status code: " + response.status);  
                 throw new Error();  
             }
       
-            // `data` is json served up from the /pickup_web_notification endpoint
-            //  In the notificationClick function (below), client.postMessage() uses
-            //  cross-window messaging (? I think) to post a message, but DOES NOT INCLUDE
-            //  the `domain` key, which prevents us from blocking non-ourDomain.com messages --
-            //  which is a major security concern.  Current solution:  /pickup_web_notification
-            //  passes back the User's current API-key, and we validate on this (more later).
+            // `data` is JSON served up from the /pickup_web_notification endpoint
+            //  In notificationClick() below, client.postMessage() uses cross-window messaging
+            //  to post a message, but Service Workers do NOT currently set the `origin` key.
+            //  Normally, we check that a received cross-window message originated from an approved domain,
+            //  but without this key, we cannot -- this is a major security concern.
+            //  To get around this, the current solution is to have the /pickup_web_notification endpoint
+            //  pass the User's API-key.  We use this value to perform our validation (more later).
             return response.json().then(function(data) {
                 if (data.api_key == null) {
                     throw new Error("api_key not included in payload"); 

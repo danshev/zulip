@@ -722,7 +722,7 @@ function msg_listener(event) {
     //   so we can't use validate event.origin === window.location.origin
     //
     // So, our implementation passes the Zulip User's api_key in the event
-    //  data.  We validate it matches the value passed page_params.
+    //  data.  We validate that the passed API key matches the value in page_params.
 
     if ("origin" in event) {
         if (event.origin !== window.location.origin) {
