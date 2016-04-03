@@ -1253,8 +1253,8 @@ def remove_android_reg_id(request, user_profile, token=REQ):
 @has_request_variables
 def pickup_web_notification(request, user_profile):
     notification_data = ujson.loads(user_profile.web_notification_payload)
-    user.web_notification_payload = None
-    user.save(update_fields=['web_notification_payload'])
+    user_profile.web_notification_payload = ujson.dumps([])
+    user_profile.save(update_fields=['web_notification_payload'])
     return json_success(notification_data)
 
 def generate_204(request):

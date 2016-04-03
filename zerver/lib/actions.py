@@ -59,6 +59,7 @@ from zerver.lib.notifications import clear_followup_emails_queue
 from zerver.lib.narrow import check_supported_events_narrow_filter
 from zerver.lib.session_user import get_session_user
 
+import uuid
 import DNS
 import ujson
 import time

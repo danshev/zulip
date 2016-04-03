@@ -49,8 +49,7 @@ function requestDevicePermission (callback) {
     if (page_params.ubiquitous_web_push || mobile_web_push) {
         if ("serviceWorker" in navigator) {  
             navigator.serviceWorker.addEventListener("message", msg_listener, false);
-
-            var service_worker_url = "/service-worker.js?"+ page_params.email +":"+ page_params.api_key;
+            var service_worker_url = "/service-worker.js?"+ page_params.email +":"+ page_params.api_key +"-"+ window.location.hostname;
             navigator.serviceWorker.register(service_worker_url).then(
                 function () {
                     if (!("showNotification" in ServiceWorkerRegistration.prototype)) {  

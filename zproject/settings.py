@@ -75,7 +75,7 @@ TEST_SUITE = False
 # The new user tutorial is enabled by default, but disabled for client tests.
 TUTORIAL_ENABLED = True
 
-UBIQUITOUS_WEB_PUSH = True
+UBIQUITOUS_WEB_PUSH = False          # Desktop *and* Mobile browsers (not recommended)
 WEB_PUSH_FOR_MOBILE_ONLY = True
 
 # Import variables like secrets from the local_settings file
